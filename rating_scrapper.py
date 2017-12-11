@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 import time
 import pandas as pd
+import pickle
 
 
 def selenium_render(source_html):
@@ -94,10 +95,13 @@ def single_page_workder(symbol):
 
 if __name__ == '__main__':
     symbol_list = get_symbol_list()
+    symbol_list = symbol_list
     p = multiprocessing.Pool(processes=multiprocessing.cpu_count() * 2)
     output_dict = {}
     for single_record in tqdm(p.imap_unordered(single_page_workder, symbol_list), total=len(symbol_list)):
         output_dict.update(single_record)
+    f = open('cache', 'wb')
+    pickle.dump(output_dict, f)
     rating_df = pd.DataFrame.from_dict(output_dict, 'index')
     rating_df.sort_values('rating', ascending=True, inplace=True)
     rating_df.to_csv('rating.csv')
