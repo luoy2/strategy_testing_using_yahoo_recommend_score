@@ -127,7 +127,7 @@ if __name__ == '__main__':
             p = multiprocessing.Process(target=single_page_workder, args=(symbol,))
             p.start()
             p.join()
-    time.sleep(60*60*5)
+        time.sleep(60*60*5)
     # rating_df = pd.DataFrame.from_dict(output_dict, 'index')
     # rating_df.sort_values('rating', ascending=True, inplace=True)
     # rating_df.to_csv('rating.csv')
