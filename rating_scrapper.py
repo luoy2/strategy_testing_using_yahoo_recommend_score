@@ -7,7 +7,7 @@ import pandas as pd
 import pickle
 import logging
 import threading
-from database_handler import mysql_client
+import database_handler
 from multiprocessing.dummy import Pool as ThreadPool
 import datetime
 import time
@@ -35,6 +35,7 @@ def selenium_render(source_html):
         last_height = new_height
     # time.sleep(10) # Let the user actually see something!
     htmlSource = driver.page_source
+    driver.close()
     driver.quit()
     return htmlSource
 
@@ -56,6 +57,7 @@ def single_page_workder(symbol):
                    'target': None,
                    'high': None,
                    'analyst_num': None}
+    mysql_client = database_handler.mysql_client()
     try:
         url = 'https://finance.yahoo.com/quote/{0}/analysts?p={0}'.format(symbol)
         data = selenium_render(url)
@@ -89,40 +91,42 @@ def single_page_workder(symbol):
         output_dict.update(anayst_num_result_dict_list)
     except Exception as e:
         logging.exception(e)
-    return output_dict
+    if all([i for i in output_dict.values()]):
+        insert_query = """
+        INSERT INTO `scrappers`.`yahoo_finance_stock_rating`
+            (`time`,
+            `symbol`,
+            `low`,
+            `current`,
+            `target`,
+            `high`,
+            `rating`,
+            `anaylst_num`)
+            VALUES
+            ('{0}', '{1}', {2}, {3}, {4}, {5}, {6}, {7});            
+        """.format(datetime.datetime.now(),
+                   symbol,
+                   output_dict['low'] if output_dict['low'] else "NULL",
+                   output_dict['current'] if output_dict['current'] else "NULL",
+                   output_dict['target'] if output_dict['target'] else "NULL",
+                   output_dict['high'] if output_dict['high'] else "NULL",
+                   output_dict['rating'] if output_dict['rating'] else "NULL",
+                   output_dict['analyst_num'] if output_dict['analyst_num'] else "NULL")
+        mysql_client.commit_query(insert_query)
+    else:
+        time.sleep(10)
+    return
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=20, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     symbol_list = get_symbol_list()
-    mysql_client = mysql_client()
+
     while 1:
         for symbol in tqdm(symbol_list):
-            result = single_page_workder(symbol)
-            if all([i for i in result.values()]):
-                insert_query = """
-                INSERT INTO `scrappers`.`yahoo_finance_stock_rating`
-                    (`time`,
-                    `symbol`,
-                    `low`,
-                    `current`,
-                    `target`,
-                    `high`,
-                    `rating`,
-                    `anaylst_num`)
-                    VALUES
-                    ('{0}', '{1}', {2}, {3}, {4}, {5}, {6}, {7});            
-                """.format(datetime.datetime.now(),
-                           symbol,
-                           result['low'] if result['low'] else "NULL",
-                           result['current'] if result['current'] else "NULL",
-                           result['target'] if result['target'] else "NULL",
-                           result['high'] if result['high'] else "NULL",
-                           result['rating'] if result['rating'] else "NULL",
-                           result['analyst_num'] if result['analyst_num'] else "NULL")
-                mysql_client.commit_query(insert_query)
-            else:
-                time.sleep(10)
+            p = multiprocessing.Process(target=single_page_workder, args=(symbol,))
+            p.start()
+            p.join()
     time.sleep(60*60*5)
     # rating_df = pd.DataFrame.from_dict(output_dict, 'index')
     # rating_df.sort_values('rating', ascending=True, inplace=True)
