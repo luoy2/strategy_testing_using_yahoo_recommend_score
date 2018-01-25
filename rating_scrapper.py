@@ -1,16 +1,13 @@
-from urllib import request
 import re
 import multiprocessing
 from tqdm import tqdm
-from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
 import time
 import pandas as pd
 import pickle
+import logging
+from database_handler import mysql_client
+
 
 
 def selenium_render(source_html):
@@ -34,33 +31,6 @@ def selenium_render(source_html):
     driver.quit()
     return htmlSource
 
-def qt_render(source_html):
-    """Fully render HTML, JavaScript and all."""
-
-    import sys
-    from PyQt5.QtWidgets import QApplication
-    from PyQt5.QtWebEngineWidgets import QWebEngineView
-
-    class Render(QWebEngineView):
-        def __init__(self, html):
-            self.html = None
-            self.app = QApplication(sys.argv)
-            QWebEngineView.__init__(self)
-            self.loadFinished.connect(self._loadFinished)
-            self.setHtml(html)
-            self.app.exec_()
-
-        def _loadFinished(self, result):
-            # This is an async call, you need to wait for this
-            # to be called before closing the app
-            self.page().toHtml(self.callable)
-
-        def callable(self, data):
-            self.html = data
-            # Data has been stored, it's safe to quit the app
-            self.app.quit()
-
-    return Render(source_html).html
 
 def get_symbol_list():
     files = ['symbol/nasdaq.csv', 'symbol/nyse.csv']
@@ -72,36 +42,53 @@ def get_symbol_list():
     return symbol_list
 
 def single_page_workder(symbol):
-    url = f'https://finance.yahoo.com/quote/{symbol}/analysts?p={symbol}'
-    data = selenium_render(url)
-    rating_pattern = re.compile(r'<div class="rating-text Arrow South.*>(?P<rating>\d+\.?\d*)</div>')
-    price_pattern = re.compile(r'<div tabindex="0" aria-label="Low\s+(?P<low>\d+\.?\d*)\s+Current\s+(?P<current>\d+\.?\d*)\s+Average\s+(?P<target>\d+\.?\d*)\s+High\s+(?P<high>\d+\.?\d*)"><div class="')
-    result = rating_pattern.finditer(data)
-    rating_result_dict_list = [m.groupdict() for m in result]
-    if rating_result_dict_list:
-        rating_result_dict_list = rating_result_dict_list[0]
-    else:
-        rating_result_dict_list = {}
+    try:
+        url = f'https://finance.yahoo.com/quote/{symbol}/analysts?p={symbol}'
+        data = selenium_render(url)
+        rating_pattern = re.compile(r'<div class="rating-text Arrow South.*>(?P<rating>\d+\.?\d*)</div>')
+        price_pattern = re.compile(r'<div tabindex="0" aria-label="Low\s+(?P<low>\d+\.?\d*)\s+Current\s+(?P<current>\d+\.?\d*)\s+Average\s+(?P<target>\d+\.?\d*)\s+High\s+(?P<high>\d+\.?\d*)"><div class="')
+        result = rating_pattern.finditer(data)
+        rating_result_dict_list = [m.groupdict() for m in result]
+        if rating_result_dict_list:
+            rating_result_dict_list = rating_result_dict_list[0]
+        else:
+            rating_result_dict_list = {}
 
-    price_result = price_pattern.finditer(data)
-    price_result_dict_list = [m.groupdict() for m in price_result]
-    if price_result_dict_list:
-        price_result_dict_list = price_result_dict_list[0]
-    else:
-        price_result_dict_list = {}
-    price_result_dict_list.update(rating_result_dict_list)
-    output_dict = {symbol: price_result_dict_list}
+        price_result = price_pattern.finditer(data)
+        price_result_dict_list = [m.groupdict() for m in price_result]
+        if price_result_dict_list:
+            price_result_dict_list = price_result_dict_list[0]
+        else:
+            price_result_dict_list = {}
+        price_result_dict_list.update(rating_result_dict_list)
+        output_dict = {symbol: price_result_dict_list}
+    except Exception as e:
+        logging.exception(e)
+        output_dict = {}
     return output_dict
 
 if __name__ == '__main__':
+    logging.basicConfig(level=0, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     symbol_list = get_symbol_list()
-    symbol_list = symbol_list
-    p = multiprocessing.Pool(processes=multiprocessing.cpu_count() * 2)
     output_dict = {}
-    for single_record in tqdm(p.imap_unordered(single_page_workder, symbol_list), total=len(symbol_list)):
-        output_dict.update(single_record)
-    f = open('cache', 'wb')
-    pickle.dump(output_dict, f)
+    with open('cache', 'rb') as f:
+        current_dict = pickle.load(f)
+    left_symbol = [s for s in symbol_list if s not in current_dict.keys()]
+    p = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+    m = multiprocessing.Manager()
+    lock = m.Lock()
+    while left_symbol:
+        print(len(left_symbol))
+        for single_record in tqdm(p.imap_unordered(single_page_workder, left_symbol), total=len(left_symbol)):
+            lock.acquire()
+            output_dict.update(single_record)
+            with open('cache', 'wb') as f:
+                pickle.dump(output_dict, f)
+            left_symbol = [s for s in symbol_list if s not in current_dict.keys()]
+            lock.release()
+        with open('cache', 'rb') as f:
+            current_dict = pickle.load(f)
+
     rating_df = pd.DataFrame.from_dict(output_dict, 'index')
     rating_df.sort_values('rating', ascending=True, inplace=True)
     rating_df.to_csv('rating.csv')
