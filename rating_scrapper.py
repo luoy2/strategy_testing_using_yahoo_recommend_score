@@ -44,7 +44,7 @@ def get_symbol_list():
 
 def single_page_workder(symbol):
     try:
-        url = f'https://finance.yahoo.com/quote/{symbol}/analysts?p={symbol}'
+        url = 'https://finance.yahoo.com/quote/{0}/analysts?p={0}'.format(symbol)
         data = selenium_render(url)
         rating_pattern = re.compile(r'<div class="rating-text Arrow South.*>(?P<rating>\d+\.?\d*)</div>')
         price_pattern = re.compile(r'<div tabindex="0" aria-label="Low\s+(?P<low>\d+\.?\d*)\s+Current\s+(?P<current>\d+\.?\d*)\s+Average\s+(?P<target>\d+\.?\d*)\s+High\s+(?P<high>\d+\.?\d*)"><div class="')
