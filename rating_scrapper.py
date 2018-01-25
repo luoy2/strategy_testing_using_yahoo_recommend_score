@@ -84,7 +84,7 @@ def single_page_workder(symbol):
     return output_dict
 
 if __name__ == '__main__':
-    logging.basicConfig(level=20, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=0, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     symbol_list = get_symbol_list()
     output_dict = {}
     mysql_client = mysql_client()
