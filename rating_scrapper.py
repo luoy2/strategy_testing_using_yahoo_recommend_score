@@ -72,8 +72,12 @@ if __name__ == '__main__':
     logging.basicConfig(level=0, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     symbol_list = get_symbol_list()
     output_dict = {}
-    with open('cache', 'rb') as f:
-        current_dict = pickle.load(f)
+    try:
+        with open('cache', 'rb') as f:
+            current_dict = pickle.load(f)
+    except Exception as e:
+        logging.exception(e)
+        current_dict = {}
     left_symbol = [s for s in symbol_list if s not in current_dict.keys()]
     p = multiprocessing.Pool(processes=multiprocessing.cpu_count())
     m = multiprocessing.Manager()
