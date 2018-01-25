@@ -12,7 +12,10 @@ from database_handler import mysql_client
 
 def selenium_render(source_html):
     #driver = webdriver.Chrome('C:/Windows/chromedriver.exe')  # Optional argument, if not specified will search path.
-    driver = webdriver.Chrome('/usr/local/bin/chromedriver')
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('headless')
+    chrome_options.add_argument('no-sandbox')
+    driver = webdriver.Chrome('/usr/local/bin/chromedriver', chrome_options=chrome_options)
     driver.get(source_html)
     SCROLL_PAUSE_TIME = 0.5
     # Get scroll height
