@@ -11,6 +11,7 @@ from database_handler import mysql_client
 from multiprocessing.dummy import Pool as ThreadPool
 import datetime
 
+
 def selenium_render(source_html):
     # driver = webdriver.Chrome('C:/Windows/chromedriver.exe')  # Optional argument, if not specified will search path.
     chrome_options = webdriver.ChromeOptions()
@@ -43,15 +44,24 @@ def get_symbol_list():
     for i in files:
         data_df = pd.read_csv(i)
         symbol = data_df['Symbol']
-        symbol_list+=symbol.values.tolist()
+        symbol_list += symbol.values.tolist()
     return symbol_list
 
+
 def single_page_workder(symbol):
+    output_dict = {'rating': None,
+                   'low': None,
+                   'current': None,
+                   'target': None,
+                   'high': None,
+                   'analyst_num': None}
     try:
         url = 'https://finance.yahoo.com/quote/{0}/analysts?p={0}'.format(symbol)
         data = selenium_render(url)
         rating_pattern = re.compile(r'<div class="rating-text Arrow South.*>(?P<rating>\d+\.?\d*)</div>')
-        price_pattern = re.compile(r'<div tabindex="0" aria-label="Low\s+(?P<low>\d+\.?\d*)\s+Current\s+(?P<current>\d+\.?\d*)\s+Average\s+(?P<target>\d+\.?\d*)\s+High\s+(?P<high>\d+\.?\d*)"><div class="')
+        price_pattern = re.compile(
+            r'<div tabindex="0" aria-label="Low\s+(?P<low>\d+\.?\d*)\s+Current\s+(?P<current>\d+\.?\d*)\s+Average\s+('
+            r'?P<target>\d+\.?\d*)\s+High\s+(?P<high>\d+\.?\d*)"><div class="')
         anayst_num_pattern = re.compile(r'Analyst Price Targets \((?P<analyst_num>\d+)\)')
         result = rating_pattern.finditer(data)
         rating_result_dict_list = [m.groupdict() for m in result]
@@ -59,6 +69,7 @@ def single_page_workder(symbol):
             rating_result_dict_list = rating_result_dict_list[0]
         else:
             rating_result_dict_list = {}
+        output_dict.update(rating_result_dict_list)
 
         price_result = price_pattern.finditer(data)
         price_result_dict_list = [m.groupdict() for m in price_result]
@@ -66,8 +77,7 @@ def single_page_workder(symbol):
             price_result_dict_list = price_result_dict_list[0]
         else:
             price_result_dict_list = {}
-        price_result_dict_list.update(rating_result_dict_list)
-
+        output_dict.update(price_result_dict_list)
 
         anayst_num_result = anayst_num_pattern.finditer(data)
         anayst_num_result_dict_list = [m.groupdict() for m in anayst_num_result]
@@ -75,18 +85,15 @@ def single_page_workder(symbol):
             anayst_num_result_dict_list = anayst_num_result_dict_list[0]
         else:
             anayst_num_result_dict_list = {}
-        anayst_num_result_dict_list.update(price_result_dict_list)
-
-        output_dict = {symbol : anayst_num_result_dict_list}
+        output_dict.update(anayst_num_result_dict_list)
     except Exception as e:
         logging.exception(e)
-        output_dict = {}
     return output_dict
 
+
 if __name__ == '__main__':
-    logging.basicConfig(level=0, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=20, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     symbol_list = get_symbol_list()
-    output_dict = {}
     mysql_client = mysql_client()
     while 1:
         for symbol in tqdm(symbol_list):
@@ -100,15 +107,18 @@ if __name__ == '__main__':
                     `current`,
                     `target`,
                     `high`,
-                    `rating`)
+                    `rating`,
+                    `anaylst_num`)
                     VALUES
-                    ('{0}', '{1}', {2}, {3}, {4}, {5}, {6});            
-                """.format(datetime.datetime.now(), symbol, result[symbol]['low'],
-                           result[symbol]['current'],
-                           result[symbol]['target'],
-                           result[symbol]['high'],
-                           result[symbol]['rating'],
-                           result[symbol]['analyst_num'])
+                    ('{0}', '{1}', {2}, {3}, {4}, {5}, {6}, {7});            
+                """.format(datetime.datetime.now(),
+                           symbol,
+                           result['low'] if result['low'] else "NULL",
+                           result['current'] if result['current'] else "NULL",
+                           result['target'] if result['target'] else "NULL",
+                           result['high'] if result['high'] else "NULL",
+                           result['rating'] if result['rating'] else "NULL",
+                           result['analyst_num'] if result['analyst_num'] else "NULL")
                 mysql_client.commit_query(insert_query)
     # rating_df = pd.DataFrame.from_dict(output_dict, 'index')
     # rating_df.sort_values('rating', ascending=True, inplace=True)
