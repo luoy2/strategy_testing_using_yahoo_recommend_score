@@ -10,6 +10,7 @@ import threading
 from database_handler import mysql_client
 from multiprocessing.dummy import Pool as ThreadPool
 import datetime
+import time
 
 
 def selenium_render(source_html):
@@ -98,7 +99,7 @@ if __name__ == '__main__':
     while 1:
         for symbol in tqdm(symbol_list):
             result = single_page_workder(symbol)
-            if result:
+            if all([i for i in result.values()]):
                 insert_query = """
                 INSERT INTO `scrappers`.`yahoo_finance_stock_rating`
                     (`time`,
@@ -120,6 +121,9 @@ if __name__ == '__main__':
                            result['rating'] if result['rating'] else "NULL",
                            result['analyst_num'] if result['analyst_num'] else "NULL")
                 mysql_client.commit_query(insert_query)
+            else:
+                time.sleep(10)
+    time.sleep(60*60*5)
     # rating_df = pd.DataFrame.from_dict(output_dict, 'index')
     # rating_df.sort_values('rating', ascending=True, inplace=True)
     # rating_df.to_csv('rating.csv')
