@@ -11,14 +11,16 @@ import database_handler
 from multiprocessing.dummy import Pool as ThreadPool
 import datetime
 import time
-
+import platform
 
 def selenium_render(source_html):
-    # driver = webdriver.Chrome('C:/Windows/chromedriver.exe')  # Optional argument, if not specified will search path.
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument('headless')
-    chrome_options.add_argument('no-sandbox')
-    driver = webdriver.Chrome('/usr/local/bin/chromedriver', chrome_options=chrome_options)
+    if platform.system() == 'Windows':
+        driver = webdriver.Chrome('C:/Windows/chromedriver.exe')  # Optional argument, if not specified will search path.
+    else:
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('headless')
+        chrome_options.add_argument('no-sandbox')
+        driver = webdriver.Chrome('/usr/local/bin/chromedriver', chrome_options=chrome_options)
     driver.get(source_html)
     SCROLL_PAUSE_TIME = 0.5
     # Get scroll height
@@ -127,7 +129,6 @@ if __name__ == '__main__':
             p = multiprocessing.Process(target=single_page_workder, args=(symbol,))
             p.start()
             p.join()
-        time.sleep(60*60*5)
     # rating_df = pd.DataFrame.from_dict(output_dict, 'index')
     # rating_df.sort_values('rating', ascending=True, inplace=True)
     # rating_df.to_csv('rating.csv')
