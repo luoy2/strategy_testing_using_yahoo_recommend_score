@@ -12,3 +12,5 @@ selenium == 3.8.1
 
 # rating_scrapper.py: 3
 tqdm == 4.19.5
+
+requests
