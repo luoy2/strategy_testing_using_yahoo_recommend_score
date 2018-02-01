@@ -66,5 +66,5 @@ if __name__ == '__main__':
     logging.basicConfig(level=20, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     while 1:
         crypto_main_scrapper()
-        time.sleep(60*60)
+        time.sleep(60*60*12)
 
