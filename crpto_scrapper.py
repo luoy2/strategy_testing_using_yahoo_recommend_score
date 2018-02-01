@@ -16,6 +16,7 @@ def parse_numbers(number_string):
         try:
             result = float(''.join(numbers))
         except Exception as e:
+            logging.exception(number_string)
             logging.exception(e)
     return result
 
@@ -27,7 +28,7 @@ def read_total_market_cap():
     url_content = requests.get('https://coinmarketcap.com/all/views/all/')
 
     # parse the content using bs4
-    soup = BeautifulSoup(url_content.text)
+    soup = BeautifulSoup(url_content.text, 'lxml')
     total_market_cap_tag = soup.find_all('div', attrs={'id': "total_market_cap"})
     total_market_cap = parse_numbers(total_market_cap_tag[0].text)
     return total_market_cap
