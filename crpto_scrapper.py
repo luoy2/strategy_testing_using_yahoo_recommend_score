@@ -11,7 +11,7 @@ import time
 
 def parse_numbers(number_string):
     result = None
-    numbers = re.findall(r'\d+|\.|-', number_string)
+    numbers = re.findall(r'\d+|\.|-|e', number_string)
     if numbers:
         try:
             result = float(''.join(numbers))
