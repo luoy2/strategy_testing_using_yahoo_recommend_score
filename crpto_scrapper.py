@@ -13,7 +13,10 @@ def parse_numbers(number_string):
     result = None
     numbers = re.findall(r'\d+|\.|-', number_string)
     if numbers:
-        result = float(''.join(numbers))
+        try:
+            result = float(''.join(numbers))
+        except Exception as e:
+            logging.exception(e)
     return result
 
 
