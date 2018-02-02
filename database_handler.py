@@ -75,6 +75,12 @@ class mysql_client(object):
             for i in values:
                 if isinstance(i, str):
                     update_query += "'{0}',".format(pymysql.escape_string(i))
+                elif isinstance(i, float):
+                    update_query += "{0},".format(i)
+                elif isinstance(i, int):
+                    update_query += "{0},".format(i)
+                elif not i:
+                    update_query += "NULL, "
                 else:
                     update_query += "'{0}',".format(i)
             update_query = update_query[:-1] + ');'

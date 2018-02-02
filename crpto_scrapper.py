@@ -47,6 +47,7 @@ def crypto_main_scrapper():
         if i not in ('Name', 'Symbol'):
             crpto_detail_table[i] = crpto_detail_table[i].apply(lambda x: parse_numbers(x))
 
+    crpto_detail_table.fillna(value=0, inplace=True)
     # adding total_market_cap to column
     crpto_detail_table['total_market_cap'] = read_total_market_cap()
     # adding modified timestamp
