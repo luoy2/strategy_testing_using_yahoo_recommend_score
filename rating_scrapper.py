@@ -12,14 +12,19 @@ from multiprocessing.dummy import Pool as ThreadPool
 import datetime
 import time
 import platform
+import os
 
 def selenium_render(source_html):
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('headless')
+    chrome_options.add_argument('no-sandbox')
     if platform.system() == 'Windows':
         driver = webdriver.Chrome('C:/Windows/chromedriver.exe')  # Optional argument, if not specified will search path.
+    elif platform.system() == 'Darwin':
+        chromedriver = "/usr/local/bin/chromedriver"
+        os.environ["webdriver.chrome.driver"] = chromedriver
+        driver = webdriver.Chrome(chromedriver, chrome_options=chrome_options)
     else:
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument('headless')
-        chrome_options.add_argument('no-sandbox')
         driver = webdriver.Chrome('/usr/local/bin/chromedriver', chrome_options=chrome_options)
     driver.get(source_html)
     SCROLL_PAUSE_TIME = 0.5
@@ -124,11 +129,17 @@ if __name__ == '__main__':
     logging.basicConfig(level=20, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     symbol_list = get_symbol_list()
 
-    while 1:
-        for symbol in tqdm(symbol_list):
-            p = multiprocessing.Process(target=single_page_workder, args=(symbol,))
-            p.start()
-            p.join()
+    if platform.system() == 'Darwin':
+        # mac high serria cannot run python multi processing
+        while 1:
+            for symbol in tqdm(symbol_list):
+                single_page_workder(symbol)
+    else:
+        while 1:
+            for symbol in tqdm(symbol_list):
+                p = multiprocessing.Process(target=single_page_workder, args=(symbol,))
+                p.start()
+                p.join()
     # rating_df = pd.DataFrame.from_dict(output_dict, 'index')
     # rating_df.sort_values('rating', ascending=True, inplace=True)
     # rating_df.to_csv('rating.csv')
