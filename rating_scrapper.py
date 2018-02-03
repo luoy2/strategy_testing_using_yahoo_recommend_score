@@ -17,7 +17,6 @@ import os
 def selenium_render(source_html):
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument('headless')
-    chrome_options.add_argument('no-sandbox')
     if platform.system() == 'Windows':
         driver = webdriver.Chrome('C:/Windows/chromedriver.exe')  # Optional argument, if not specified will search path.
     elif platform.system() == 'Darwin':
@@ -25,6 +24,7 @@ def selenium_render(source_html):
         os.environ["webdriver.chrome.driver"] = chromedriver
         driver = webdriver.Chrome(chromedriver, chrome_options=chrome_options)
     else:
+        chrome_options.add_argument('no-sandbox')
         driver = webdriver.Chrome('/usr/local/bin/chromedriver', chrome_options=chrome_options)
     driver.get(source_html)
     SCROLL_PAUSE_TIME = 0.5
