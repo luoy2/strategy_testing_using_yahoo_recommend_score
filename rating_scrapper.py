@@ -47,7 +47,10 @@ def selenium_render(source_html):
     driver.quit()
     # clean up google chrome process for mac
     if platform.system() == 'Darwin':
-        subprocess.Popen('pkill Google Chrome')
+        p = subprocess.Popen(['pkill', 'Google Chrome'], stdout=subprocess.PIPE)
+        out, err = p.communicate()
+        if err:
+            logging.exception(err)
     return htmlSource
 
 
