@@ -136,41 +136,8 @@ if __name__ == '__main__':
                 single_page_workder(symbol)
     else:
         while 1:
+            # use process to run task in order to prevent swap memory leak
             for symbol in tqdm(symbol_list):
                 p = multiprocessing.Process(target=single_page_workder, args=(symbol,))
                 p.start()
                 p.join()
-    # rating_df = pd.DataFrame.from_dict(output_dict, 'index')
-    # rating_df.sort_values('rating', ascending=True, inplace=True)
-    # rating_df.to_csv('rating.csv')
-
-# if __name__ == '__main__':
-#     logging.basicConfig(level=20, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-#     symbol_list = get_symbol_list()
-#     output_dict = {}
-#     try:
-#         with open('cache', 'rb') as f:
-#             current_dict = pickle.load(f)
-#     except Exception as e:
-#         logging.exception(e)
-#         current_dict = {}
-#     left_symbol = [s for s in symbol_list if s not in current_dict.keys()]
-#     p = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-#     m = multiprocessing.Manager()
-#     lock = m.Lock()
-#     while left_symbol:
-#         print(len(left_symbol))
-#         for single_record in tqdm(p.imap_unordered(single_page_workder, left_symbol), total=len(left_symbol)):
-#             lock.acquire()
-#             output_dict.update(single_record)
-#             with open('cache', 'wb') as f:
-#                 pickle.dump(output_dict, f)
-#             left_symbol = [s for s in symbol_list if s not in current_dict.keys()]
-#             lock.release()
-#         with open('cache', 'rb') as f:
-#             current_dict = pickle.load(f)
-#
-#     rating_df = pd.DataFrame.from_dict(output_dict, 'index')
-#     rating_df.sort_values('rating', ascending=True, inplace=True)
-#     rating_df.to_csv('rating.csv')
-#
