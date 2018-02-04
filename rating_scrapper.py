@@ -13,6 +13,7 @@ import datetime
 import time
 import platform
 import os
+import subprocess
 
 def selenium_render(source_html):
     chrome_options = webdriver.ChromeOptions()
@@ -44,6 +45,9 @@ def selenium_render(source_html):
     htmlSource = driver.page_source
     driver.close()
     driver.quit()
+    # clean up google chrome process for mac
+    if platform.system() == 'Darwin':
+        subprocess.Popen('pkill Google Chrome')
     return htmlSource
 
 
