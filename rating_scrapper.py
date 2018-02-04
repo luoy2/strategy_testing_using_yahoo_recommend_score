@@ -51,6 +51,7 @@ def selenium_render(source_html):
         out, err = p.communicate()
         if err:
             logging.exception(err)
+        p.kill()
     return htmlSource
 
 
