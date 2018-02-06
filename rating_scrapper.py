@@ -53,16 +53,20 @@ def selenium_render(source_html):
             logging.exception(err)
         p.kill()
     elif platform.system() == 'Linux':
-        p = subprocess.Popen(['pkill', 'chrome'], stdout=subprocess.PIPE)
-        out, err = p.communicate()
-        if err:
-            logging.exception(err)
-        p.kill()
-        p = subprocess.Popen(['pkill', 'chromedriver'], stdout=subprocess.PIPE)
-        out, err = p.communicate()
-        if err:
-            logging.exception(err)
-        p.kill()
+        p1 = subprocess.Popen(['pkill', 'chrome'], stdout=subprocess.PIPE)
+        p2 = subprocess.Popen(['pkill', 'chromedriver'], stdout=subprocess.PIPE)
+        try:
+            p1.kill()
+        except ProcessLookupError:
+            pass
+        except Exception as e:
+            logging.exception(e)
+        try:
+            p2.kill()
+        except ProcessLookupError:
+            pass
+        except Exception as e:
+            logging.exception(e)
     return htmlSource
 
 
