@@ -30,7 +30,7 @@ def read_total_market_cap():
     # parse the content using bs4
     soup = BeautifulSoup(url_content.text, 'lxml')
     total_market_cap_tag = soup.find_all('div', attrs={'id': "total_market_cap"})
-    total_market_cap = parse_numbers(total_market_cap_tag[0].text)
+    total_market_cap = parse_numbers(total_market_cap_tag[0].text.split('$')[1])
     return total_market_cap
 
 
