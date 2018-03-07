@@ -69,3 +69,4 @@ if __name__ == '__main__':
         crypto_main_scrapper()
         time.sleep(60*60*12)
 
+
