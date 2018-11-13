@@ -18,7 +18,7 @@ PyMySQL==0.8.0
 python-dateutil==2.6.1
 pytz==2017.3
 query-string==0.0.28
-requests==2.18.4
+requests
 selenium==3.8.1
 six==1.11.0
 tqdm==4.19.5
